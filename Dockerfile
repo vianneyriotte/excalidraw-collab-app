@@ -14,15 +14,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Create data directory for SQLite during build
-RUN mkdir -p data
-
-# Generate Drizzle migrations
-RUN npm run db:generate
-
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL="file:./data/sqlite.db"
 RUN npm run build
 
 # Production image
@@ -39,7 +32,6 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/drizzle ./drizzle
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -48,21 +40,6 @@ RUN chown nextjs:nodejs .next
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy drizzle config and schema for migrations
-COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder /app/lib/db ./lib/db
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-
-# Create migrations directory with deps
-WORKDIR /migrations
-RUN echo '{"dependencies":{"drizzle-kit":"latest","drizzle-orm":"latest","better-sqlite3":"latest"}}' > package.json
-RUN npm install
-WORKDIR /app
-
-# Copy entrypoint script
-COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x docker-entrypoint.sh
 
 # Create data directory for SQLite
 RUN mkdir -p data && chown nextjs:nodejs data
@@ -74,4 +51,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["./docker-entrypoint.sh"]
+CMD ["node", "server.js"]

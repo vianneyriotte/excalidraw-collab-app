@@ -2,9 +2,9 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { drawings } from "@/lib/db/schema"
-import { eq, desc } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import type { Drawing, DrawingRow } from "@/lib/db/types"
+import { rowToDrawing } from "@/lib/db/types"
 
 export async function createDrawing() {
   const session = await auth()
@@ -13,15 +13,19 @@ export async function createDrawing() {
   }
 
   try {
-    const [drawing] = await db
-      .insert(drawings)
-      .values({
-        userId: session.user.id,
-        title: "Sans titre",
-      })
-      .returning()
+    const id = crypto.randomUUID()
+    const now = Date.now()
 
-    return { success: true, data: drawing }
+    const stmt = db.prepare(`
+      INSERT INTO drawings (id, userId, title, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?)
+    `)
+    stmt.run(id, session.user.id, "Sans titre", now, now)
+
+    const getStmt = db.prepare("SELECT * FROM drawings WHERE id = ?")
+    const row = getStmt.get(id) as DrawingRow
+
+    return { success: true, data: rowToDrawing(row) }
   } catch (error) {
     console.error("createDrawing error:", error)
     return { success: false, error: "Erreur lors de la création" }
@@ -32,15 +36,14 @@ export async function getDrawing(id: string) {
   const session = await auth()
 
   try {
-    const [drawing] = await db
-      .select()
-      .from(drawings)
-      .where(eq(drawings.id, id))
-      .limit(1)
+    const stmt = db.prepare("SELECT * FROM drawings WHERE id = ?")
+    const row = stmt.get(id) as DrawingRow | undefined
 
-    if (!drawing) {
+    if (!row) {
       return { success: false, error: "Dessin non trouvé" }
     }
+
+    const drawing = rowToDrawing(row)
 
     if (drawing.userId !== session?.user?.id && !drawing.isPublic) {
       return { success: false, error: "Accès non autorisé" }
@@ -62,11 +65,8 @@ export async function updateDrawing(
   }
 
   try {
-    const [existing] = await db
-      .select()
-      .from(drawings)
-      .where(eq(drawings.id, id))
-      .limit(1)
+    const getStmt = db.prepare("SELECT * FROM drawings WHERE id = ?")
+    const existing = getStmt.get(id) as DrawingRow | undefined
 
     if (!existing) {
       return { success: false, error: "Dessin non trouvé" }
@@ -76,16 +76,33 @@ export async function updateDrawing(
       return { success: false, error: "Accès non autorisé" }
     }
 
-    const [updated] = await db
-      .update(drawings)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(drawings.id, id))
-      .returning()
+    const updates: string[] = []
+    const values: (string | number)[] = []
 
-    return { success: true, data: updated }
+    if (data.title !== undefined) {
+      updates.push("title = ?")
+      values.push(data.title)
+    }
+    if (data.content !== undefined) {
+      updates.push("content = ?")
+      values.push(data.content)
+    }
+    if (data.thumbnail !== undefined) {
+      updates.push("thumbnail = ?")
+      values.push(data.thumbnail)
+    }
+
+    updates.push("updatedAt = ?")
+    values.push(Date.now())
+    values.push(id)
+
+    const updateStmt = db.prepare(`
+      UPDATE drawings SET ${updates.join(", ")} WHERE id = ?
+    `)
+    updateStmt.run(...values)
+
+    const updatedRow = getStmt.get(id) as DrawingRow
+    return { success: true, data: rowToDrawing(updatedRow) }
   } catch {
     return { success: false, error: "Erreur lors de la mise à jour" }
   }
@@ -98,11 +115,8 @@ export async function deleteDrawing(id: string) {
   }
 
   try {
-    const [existing] = await db
-      .select()
-      .from(drawings)
-      .where(eq(drawings.id, id))
-      .limit(1)
+    const getStmt = db.prepare("SELECT * FROM drawings WHERE id = ?")
+    const existing = getStmt.get(id) as DrawingRow | undefined
 
     if (!existing) {
       return { success: false, error: "Dessin non trouvé" }
@@ -112,7 +126,8 @@ export async function deleteDrawing(id: string) {
       return { success: false, error: "Accès non autorisé" }
     }
 
-    await db.delete(drawings).where(eq(drawings.id, id))
+    const deleteStmt = db.prepare("DELETE FROM drawings WHERE id = ?")
+    deleteStmt.run(id)
     revalidatePath("/dashboard")
 
     return { success: true }
@@ -128,13 +143,12 @@ export async function getUserDrawings() {
   }
 
   try {
-    const userDrawings = await db
-      .select()
-      .from(drawings)
-      .where(eq(drawings.userId, session.user.id))
-      .orderBy(desc(drawings.updatedAt))
+    const stmt = db.prepare(`
+      SELECT * FROM drawings WHERE userId = ? ORDER BY updatedAt DESC
+    `)
+    const rows = stmt.all(session.user.id) as DrawingRow[]
 
-    return { success: true, data: userDrawings }
+    return { success: true, data: rows.map(rowToDrawing) }
   } catch {
     return { success: false, error: "Erreur lors de la récupération" }
   }

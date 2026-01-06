@@ -2,9 +2,9 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { drawings, users } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
 import { nanoid } from "nanoid"
+import type { DrawingRow } from "@/lib/db/types"
+import { rowToDrawing } from "@/lib/db/types"
 
 export async function togglePublic(drawingId: string, isPublic: boolean) {
   const session = await auth()
@@ -13,11 +13,8 @@ export async function togglePublic(drawingId: string, isPublic: boolean) {
   }
 
   try {
-    const [existing] = await db
-      .select()
-      .from(drawings)
-      .where(eq(drawings.id, drawingId))
-      .limit(1)
+    const getStmt = db.prepare("SELECT * FROM drawings WHERE id = ?")
+    const existing = getStmt.get(drawingId) as DrawingRow | undefined
 
     if (!existing) {
       return { success: false, error: "Dessin non trouvé" }
@@ -29,17 +26,12 @@ export async function togglePublic(drawingId: string, isPublic: boolean) {
 
     const shareId = isPublic ? nanoid(10) : null
 
-    const [updated] = await db
-      .update(drawings)
-      .set({
-        isPublic,
-        shareId,
-        updatedAt: new Date(),
-      })
-      .where(eq(drawings.id, drawingId))
-      .returning()
+    const updateStmt = db.prepare(`
+      UPDATE drawings SET isPublic = ?, shareId = ?, updatedAt = ? WHERE id = ?
+    `)
+    updateStmt.run(isPublic ? 1 : 0, shareId, Date.now(), drawingId)
 
-    return { success: true, data: { shareId: updated.shareId } }
+    return { success: true, data: { shareId } }
   } catch {
     return { success: false, error: "Erreur lors de la mise à jour" }
   }
@@ -47,15 +39,14 @@ export async function togglePublic(drawingId: string, isPublic: boolean) {
 
 export async function getPublicDrawing(shareId: string) {
   try {
-    const [drawing] = await db
-      .select()
-      .from(drawings)
-      .where(eq(drawings.shareId, shareId))
-      .limit(1)
+    const stmt = db.prepare("SELECT * FROM drawings WHERE shareId = ?")
+    const row = stmt.get(shareId) as DrawingRow | undefined
 
-    if (!drawing) {
+    if (!row) {
       return { success: false, error: "Dessin non trouvé" }
     }
+
+    const drawing = rowToDrawing(row)
 
     if (!drawing.isPublic) {
       return { success: false, error: "Ce dessin n'est pas public" }
@@ -74,20 +65,20 @@ export async function getDrawingForShare(drawingId: string) {
   }
 
   try {
-    const [drawing] = await db
-      .select({
-        shareId: drawings.shareId,
-        isPublic: drawings.isPublic,
-      })
-      .from(drawings)
-      .where(eq(drawings.id, drawingId))
-      .limit(1)
+    const stmt = db.prepare("SELECT shareId, isPublic FROM drawings WHERE id = ?")
+    const row = stmt.get(drawingId) as { shareId: string | null; isPublic: number } | undefined
 
-    if (!drawing) {
+    if (!row) {
       return { success: false, error: "Dessin non trouvé" }
     }
 
-    return { success: true, data: drawing }
+    return {
+      success: true,
+      data: {
+        shareId: row.shareId,
+        isPublic: row.isPublic === 1,
+      },
+    }
   } catch {
     return { success: false, error: "Erreur lors de la récupération" }
   }
@@ -95,29 +86,29 @@ export async function getDrawingForShare(drawingId: string) {
 
 export async function getDrawingByShareId(shareId: string) {
   try {
-    const [result] = await db
-      .select({
-        drawing: drawings,
-        userName: users.name,
-      })
-      .from(drawings)
-      .leftJoin(users, eq(drawings.userId, users.id))
-      .where(eq(drawings.shareId, shareId))
-      .limit(1)
+    const stmt = db.prepare(`
+      SELECT d.*, u.name as userName
+      FROM drawings d
+      LEFT JOIN users u ON d.userId = u.id
+      WHERE d.shareId = ?
+    `)
+    const row = stmt.get(shareId) as (DrawingRow & { userName: string | null }) | undefined
 
-    if (!result) {
+    if (!row) {
       return { success: false, error: "Dessin non trouvé" }
     }
 
-    if (!result.drawing.isPublic) {
+    if (row.isPublic !== 1) {
       return { success: false, error: "Ce dessin n'est pas public" }
     }
+
+    const { userName, ...drawingRow } = row
 
     return {
       success: true,
       data: {
-        drawing: result.drawing,
-        userName: result.userName || "Utilisateur anonyme",
+        drawing: rowToDrawing(drawingRow),
+        userName: userName || "Utilisateur anonyme",
       },
     }
   } catch {
