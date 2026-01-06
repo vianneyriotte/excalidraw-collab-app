@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build outputs
+.next
+out
+
+# Environment files (use docker-compose env)
+.env*
+!.env.example
+
+# Development
+.git
+.gitignore
+README.md
+*.md
+
+# IDE
+.vscode
+.idea
+
+# Testing
+coverage
+
+# Data
+data/
+*.db
