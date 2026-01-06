@@ -1,10 +1,9 @@
 #!/bin/sh
 set -e
 
-# Run database migrations from /migrations directory
+# Run database migrations
 echo "Running database migrations..."
-cd /migrations && npx drizzle-kit push --config=/app/drizzle.config.ts
-cd /app
+/migrations/node_modules/.bin/drizzle-kit push
 
 # Start the application
 echo "Starting application..."
