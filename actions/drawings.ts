@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { drawings } from "@/lib/db/schema"
-import { eq, and, desc } from "drizzle-orm"
+import { eq, desc } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function createDrawing() {
