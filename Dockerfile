@@ -41,15 +41,6 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
 
-# Copy drizzle config and schema for migrations
-COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder /app/lib/db ./lib/db
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-
-# Install only drizzle-kit and dependencies for migrations
-RUN npm install drizzle-kit drizzle-orm better-sqlite3 tsx --omit=dev
-
 # Set the correct permission for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
@@ -57,6 +48,14 @@ RUN chown nextjs:nodejs .next
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy drizzle config and schema for migrations (after standalone to not overwrite)
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/lib/db ./lib/db
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
+# Install drizzle-kit and dependencies for migrations
+RUN npm install drizzle-kit drizzle-orm better-sqlite3 tsx
 
 # Copy entrypoint script
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh

@@ -3,7 +3,7 @@ set -e
 
 # Run database migrations
 echo "Running database migrations..."
-npx drizzle-kit push
+./node_modules/.bin/drizzle-kit push
 
 # Start the application
 echo "Starting application..."
