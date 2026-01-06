@@ -3,7 +3,7 @@ set -e
 
 # Run database migrations
 echo "Running database migrations..."
-./node_modules/.bin/drizzle-kit push
+node ./node_modules/drizzle-kit/bin.cjs push
 
 # Start the application
 echo "Starting application..."
