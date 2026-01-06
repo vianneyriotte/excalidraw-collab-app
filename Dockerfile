@@ -54,17 +54,11 @@ COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/lib/db ./lib/db
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
-# Copy drizzle dependencies directly from deps stage
-COPY --from=deps /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
-COPY --from=deps /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
-COPY --from=deps /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
-COPY --from=deps /app/node_modules/tsx ./node_modules/tsx
-COPY --from=deps /app/node_modules/esbuild ./node_modules/esbuild
-COPY --from=deps /app/node_modules/@esbuild ./node_modules/@esbuild
-COPY --from=deps /app/node_modules/bindings ./node_modules/bindings
-COPY --from=deps /app/node_modules/file-uri-to-path ./node_modules/file-uri-to-path
-COPY --from=deps /app/node_modules/get-tsconfig ./node_modules/get-tsconfig
-COPY --from=deps /app/node_modules/resolve-pkg-maps ./node_modules/resolve-pkg-maps
+# Create migrations directory with deps
+WORKDIR /migrations
+RUN echo '{"dependencies":{"drizzle-kit":"latest","drizzle-orm":"latest","better-sqlite3":"latest"}}' > package.json
+RUN npm install
+WORKDIR /app
 
 # Copy entrypoint script
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
