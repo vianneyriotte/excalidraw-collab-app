@@ -14,11 +14,15 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Create data directory for SQLite during build
+RUN mkdir -p data
+
 # Generate Drizzle migrations
 RUN npm run db:generate
 
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL="file:./data/sqlite.db"
 RUN npm run build
 
 # Production image
