@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import type { Drawing, DrawingRow } from "@/lib/db/types"
+import type { DrawingRow } from "@/lib/db/types"
 import { rowToDrawing } from "@/lib/db/types"
 
 export async function createDrawing() {
