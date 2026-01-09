@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { SessionProvider } from "next-auth/react"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "@/components/ui/sonner"
+import { BuildVersion } from "@/components/BuildVersion"
 import Script from "next/script"
 import "./globals.css"
 
@@ -45,6 +46,7 @@ export default function RootLayout({
           >
             {children}
             <Toaster />
+            <BuildVersion />
           </ThemeProvider>
         </SessionProvider>
       </body>
