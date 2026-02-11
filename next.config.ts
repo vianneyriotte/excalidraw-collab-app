@@ -12,6 +12,11 @@ const getGitCommit = () => {
 const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["better-sqlite3"],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
   env: {
     NEXT_PUBLIC_BUILD_COMMIT: getGitCommit(),
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
