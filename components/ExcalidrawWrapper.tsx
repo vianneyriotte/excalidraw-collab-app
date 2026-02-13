@@ -61,6 +61,11 @@ export function ExcalidrawWrapper({
       <Excalidraw
         excalidrawAPI={(api) => {
           excalidrawRef.current = api
+          if (initialData?.elements?.length) {
+            setTimeout(() => {
+              api.scrollToContent(undefined, { fitToViewport: true, animate: false })
+            }, 0)
+          }
         }}
         initialData={initialData}
         onChange={handleChange}
