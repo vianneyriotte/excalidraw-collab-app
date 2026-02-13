@@ -48,7 +48,10 @@ export function ExcalidrawWrapper({
 
   useEffect(() => {
     if (apiReady && excalidrawRef.current && initialData?.elements?.length) {
-      excalidrawRef.current.scrollToContent(undefined, { fitToViewport: true, animate: false })
+      // Wait for Excalidraw to finish processing initialData
+      requestAnimationFrame(() => {
+        excalidrawRef.current?.scrollToContent(undefined, { fitToViewport: true, animate: false })
+      })
     }
   }, [apiReady, initialData?.elements?.length])
 
