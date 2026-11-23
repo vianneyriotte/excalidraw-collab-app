@@ -1,6 +1,7 @@
 "use server"
 
 import bcrypt from "bcryptjs"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -38,4 +39,44 @@ export async function registerUser(
 
   db.prepare("UPDATE users SET passwordHash = ? WHERE id = ?").run(passwordHash, existing.id)
   return {}
+}
+
+export async function setPassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<{ error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { error: "Non authentifié" }
+  }
+  if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    return { error: `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères` }
+  }
+
+  const user = db
+    .prepare("SELECT passwordHash FROM users WHERE id = ?")
+    .get(session.user.id) as { passwordHash: string | null } | undefined
+  if (!user) {
+    return { error: "Utilisateur introuvable" }
+  }
+
+  if (user.passwordHash) {
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash)
+    if (!valid) {
+      return { error: "Mot de passe actuel incorrect" }
+    }
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12)
+  db.prepare("UPDATE users SET passwordHash = ? WHERE id = ?").run(passwordHash, session.user.id)
+  return {}
+}
+
+export async function hasPassword(): Promise<boolean> {
+  const session = await auth()
+  if (!session?.user?.id) return false
+  const user = db
+    .prepare("SELECT passwordHash FROM users WHERE id = ?")
+    .get(session.user.id) as { passwordHash: string | null } | undefined
+  return !!user?.passwordHash
 }

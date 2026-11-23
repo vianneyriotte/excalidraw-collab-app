@@ -23,7 +23,8 @@ export const authConfig: NextAuthConfig = {
       const isLoggedIn = !!auth?.user
       const isProtectedRoute =
         nextUrl.pathname.startsWith("/dashboard") ||
-        nextUrl.pathname.startsWith("/draw")
+        nextUrl.pathname.startsWith("/draw") ||
+        nextUrl.pathname.startsWith("/settings")
 
       if (isProtectedRoute && !isLoggedIn) {
         return false

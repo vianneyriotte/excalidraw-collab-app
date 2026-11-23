@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User } from "lucide-react"
+import { KeyRound, LogOut, User } from "lucide-react"
 import type { Session } from "next-auth"
 
 interface AuthButtonsProps {
@@ -49,6 +49,12 @@ export function AuthButtons({ session }: AuthButtonsProps) {
             </div>
           </div>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href="/settings">
+              <KeyRound className="mr-2 h-4 w-4" />
+              <span>Mot de passe</span>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer"
             onClick={() => signOut({ callbackUrl: "/" })}
