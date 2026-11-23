@@ -4,6 +4,7 @@ export interface User {
   email: string
   emailVerified: number | null
   image: string | null
+  passwordHash: string | null
 }
 
 export interface Account {

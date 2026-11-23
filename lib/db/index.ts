@@ -86,6 +86,11 @@ function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_accounts_userId ON accounts(userId);
   `)
 
+  const userColumns = _db.prepare("PRAGMA table_info(users)").all() as { name: string }[]
+  if (!userColumns.some((column) => column.name === "passwordHash")) {
+    _db.exec("ALTER TABLE users ADD COLUMN passwordHash TEXT")
+  }
+
   return _db
 }
 

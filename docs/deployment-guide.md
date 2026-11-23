@@ -36,10 +36,11 @@ Create a `.env` file in the project root:
 
 ```bash
 AUTH_SECRET=your-secret-key-generated-with-openssl-rand-base64-32
-AUTH_GITHUB_ID=your-github-client-id
-AUTH_GITHUB_SECRET=your-github-client-secret
-AUTH_GOOGLE_ID=your-google-client-id
-AUTH_GOOGLE_SECRET=your-google-client-secret
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-smtp-user
+SMTP_PASSWORD=your-smtp-password
+EMAIL_FROM="Excalidraw Collab <no-reply@example.com>"
 NEXTAUTH_URL=https://your-domain.com
 ```
 
@@ -115,10 +116,11 @@ docker cp ./backup.db $(docker-compose ps -q app):/app/data/sqlite.db
 | Variable | Required |
 |----------|----------|
 | `AUTH_SECRET` | Yes |
-| `AUTH_GITHUB_ID` | Yes |
-| `AUTH_GITHUB_SECRET` | Yes |
-| `AUTH_GOOGLE_ID` | Optional |
-| `AUTH_GOOGLE_SECRET` | Optional |
+| `SMTP_HOST` | Yes |
+| `SMTP_PORT` | Optional |
+| `SMTP_USER` | Yes |
+| `SMTP_PASSWORD` | Yes |
+| `EMAIL_FROM` | Yes |
 
 > **Note**: SQLite is not recommended for Vercel deployment due to ephemeral file system. Consider using a managed database like PlanetScale, Neon, or Turso.
 
@@ -159,15 +161,6 @@ pm2 startup
 - Never commit `.env.local` or `.env` files
 - Use secrets management in production
 - Rotate `AUTH_SECRET` periodically
-
-### OAuth Configuration
-
-Ensure callback URLs are configured correctly:
-
-| Provider | Callback URL |
-|----------|--------------|
-| GitHub | `https://your-domain.com/api/auth/callback/github` |
-| Google | `https://your-domain.com/api/auth/callback/google` |
 
 ### HTTPS
 

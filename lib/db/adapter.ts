@@ -31,7 +31,7 @@ export function BetterSqliteAdapter(): Adapter {
     },
 
     getUserByEmail(email) {
-      const stmt = db.prepare("SELECT * FROM users WHERE email = ?")
+      const stmt = db.prepare("SELECT * FROM users WHERE email = ? COLLATE NOCASE")
       const user = stmt.get(email) as User | undefined
       if (!user) return null
       return {
