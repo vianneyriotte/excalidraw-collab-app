@@ -65,7 +65,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           pass: process.env.SMTP_PASSWORD,
         },
       },
-      from: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM || process.env.SMTP_USER,
       sendVerificationRequest,
     }),
     Credentials({

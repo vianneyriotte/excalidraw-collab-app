@@ -55,17 +55,27 @@ export function BetterSqliteAdapter(): Adapter {
     },
 
     updateUser(user) {
-      const stmt = db.prepare(`
-        UPDATE users SET name = ?, email = ?, emailVerified = ?, image = ?
-        WHERE id = ?
-      `)
-      stmt.run(
-        user.name ?? null,
-        user.email,
-        user.emailVerified ? user.emailVerified.getTime() : null,
-        user.image ?? null,
-        user.id
-      )
+      const columns: string[] = []
+      const values: (string | number | null)[] = []
+      if (user.name !== undefined) {
+        columns.push("name = ?")
+        values.push(user.name ?? null)
+      }
+      if (user.email !== undefined) {
+        columns.push("email = ?")
+        values.push(user.email)
+      }
+      if (user.emailVerified !== undefined) {
+        columns.push("emailVerified = ?")
+        values.push(user.emailVerified ? user.emailVerified.getTime() : null)
+      }
+      if (user.image !== undefined) {
+        columns.push("image = ?")
+        values.push(user.image ?? null)
+      }
+      if (columns.length > 0) {
+        db.prepare(`UPDATE users SET ${columns.join(", ")} WHERE id = ?`).run(...values, user.id)
+      }
       return this.getUser!(user.id!) as Promise<AdapterUser>
     },
 
