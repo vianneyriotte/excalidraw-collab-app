@@ -31,7 +31,7 @@ async function sendVerificationRequest({
       text: `Connectez-vous avec ce lien :\n${url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet email.`,
       html: `<p>Connectez-vous avec ce lien :</p><p><a href="${url}">Se connecter</a></p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>`,
     })
-    const failed = [...result.rejected, ...result.pending]
+    const failed = [...(result.rejected ?? []), ...(result.pending ?? [])]
     console.log(
       `[auth] magic link sent: messageId=${result.messageId} accepted=${JSON.stringify(result.accepted)} rejected=${JSON.stringify(result.rejected)} response=${result.response}`
     )
